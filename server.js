@@ -8,6 +8,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
+app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 const rooms = new Map();
@@ -30,6 +31,15 @@ function getRoom(roomCode) {
   return rooms.get(roomCode);
 }
 
+function createPlayer({ id, name }) {
+  return {
+    id,
+    name,
+    balance: 1500,
+    cardNumber: generateCardNumber()
+  };
+}
+
 function sanitizeRoom(room) {
   return {
     players: room.players.map(({ id, name, balance, cardNumber }) => ({
@@ -41,6 +51,106 @@ function sanitizeRoom(room) {
     log: room.log.slice(-20)
   };
 }
+
+function sanitizeRooms() {
+  return Array.from(rooms.entries()).map(([roomCode, room]) => ({
+    roomCode,
+    playerCount: room.players.length
+  }));
+}
+
+function transferInRoom(room, { sourceId, targetId, amount }) {
+  const sender = room.players.find((player) => player.id === sourceId);
+  const target = room.players.find((player) => player.id === targetId);
+  const value = Number(amount);
+
+  if (!sender || !target || !Number.isFinite(value) || value <= 0) {
+    return { error: "Transfert invalide." };
+  }
+
+  if (sender.balance < value) {
+    return { error: "Solde insuffisant." };
+  }
+
+  sender.balance -= value;
+  target.balance += value;
+
+  room.log.push(`${sender.name} paie ${value}M$ à ${target.name} (API/CB fictive).`);
+
+  return { room };
+}
+
+app.get("/api/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    service: "web-monopoly-api"
+  });
+});
+
+app.get("/api/rooms", (_req, res) => {
+  res.json({
+    rooms: sanitizeRooms()
+  });
+});
+
+app.get("/api/rooms/:roomCode", (req, res) => {
+  const roomCode = String(req.params.roomCode || "").trim().toUpperCase();
+  if (!roomCode || !rooms.has(roomCode)) {
+    res.status(404).json({ error: "Salle introuvable." });
+    return;
+  }
+
+  res.json({
+    roomCode,
+    ...sanitizeRoom(rooms.get(roomCode))
+  });
+});
+
+app.post("/api/rooms/:roomCode/join", (req, res) => {
+  const roomCode = String(req.params.roomCode || "").trim().toUpperCase();
+  const playerName = String(req.body?.playerName || "").trim() || "Joueur API";
+
+  if (!roomCode) {
+    res.status(400).json({ error: "Code de salle invalide." });
+    return;
+  }
+
+  const room = getRoom(roomCode);
+  const playerId = `api-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const player = createPlayer({ id: playerId, name: playerName });
+
+  room.players.push(player);
+  room.log.push(`${playerName} rejoint la partie via API.`);
+  io.to(roomCode).emit("room-updated", sanitizeRoom(room));
+
+  res.status(201).json({
+    roomCode,
+    player
+  });
+});
+
+app.post("/api/rooms/:roomCode/transfer", (req, res) => {
+  const roomCode = String(req.params.roomCode || "").trim().toUpperCase();
+  if (!roomCode || !rooms.has(roomCode)) {
+    res.status(404).json({ error: "Salle introuvable." });
+    return;
+  }
+
+  const room = rooms.get(roomCode);
+  const { sourceId, targetId, amount } = req.body || {};
+  const result = transferInRoom(room, { sourceId, targetId, amount });
+
+  if (result.error) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+
+  io.to(roomCode).emit("room-updated", sanitizeRoom(room));
+  res.json({
+    roomCode,
+    ...sanitizeRoom(room)
+  });
+});
 
 io.on("connection", (socket) => {
   socket.on("join-room", ({ roomCode, playerName }) => {
@@ -56,12 +166,7 @@ io.on("connection", (socket) => {
 
     const existing = room.players.find((player) => player.id === socket.id);
     if (!existing) {
-      room.players.push({
-        id: socket.id,
-        name: cleanName,
-        balance: 1500,
-        cardNumber: generateCardNumber()
-      });
+      room.players.push(createPlayer({ id: socket.id, name: cleanName }));
       room.log.push(`${cleanName} rejoint la partie.`);
     }
 
@@ -76,26 +181,16 @@ io.on("connection", (socket) => {
     if (!roomCode || !rooms.has(roomCode)) return;
 
     const room = rooms.get(roomCode);
-    const sender = room.players.find((player) => player.id === socket.id);
-    const target = room.players.find((player) => player.id === targetId);
-    const value = Number(amount);
+    const result = transferInRoom(room, {
+      sourceId: socket.id,
+      targetId,
+      amount
+    });
 
-    if (!sender || !target || !Number.isFinite(value) || value <= 0) {
-      socket.emit("error-message", "Transfert invalide.");
+    if (result.error) {
+      socket.emit("error-message", result.error);
       return;
     }
-
-    if (sender.balance < value) {
-      socket.emit("error-message", "Solde insuffisant.");
-      return;
-    }
-
-    sender.balance -= value;
-    target.balance += value;
-
-    room.log.push(
-      `${sender.name} paie ${value}M$ à ${target.name} (carte fictive).`
-    );
 
     io.to(roomCode).emit("room-updated", sanitizeRoom(room));
   });
