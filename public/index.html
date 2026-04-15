@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monopoly Web Multijoueur</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Monopoly Web - Multijoueur</h1>
+
+      <section class="card">
+        <h2>Connexion à une partie</h2>
+        <form id="join-form">
+          <label>
+            Nom du joueur
+            <input id="playerName" placeholder="Ex: Alex" required />
+          </label>
+          <label>
+            Code de salle
+            <input id="roomCode" placeholder="Ex: MONO1" required />
+          </label>
+          <button type="submit">Rejoindre</button>
+        </form>
+      </section>
+
+      <section class="card" id="bank-section" hidden>
+        <h2>Banque & Cartes fictives (CB)</h2>
+        <ul id="players-list"></ul>
+      </section>
+
+      <section class="card" id="transfer-section" hidden>
+        <h2>Transfert entre joueurs</h2>
+        <form id="transfer-form">
+          <label>
+            Destinataire
+            <select id="targetPlayer" required></select>
+          </label>
+          <label>
+            Montant (M$)
+            <input id="transferAmount" type="number" min="1" value="100" required />
+          </label>
+          <button type="submit">Envoyer</button>
+        </form>
+      </section>
+
+      <section class="card" id="log-section" hidden>
+        <h2>Journal de la partie</h2>
+        <ul id="log-list"></ul>
+      </section>
+
+      <p id="message"></p>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

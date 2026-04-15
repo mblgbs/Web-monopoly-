@@ -1,0 +1,68 @@
+:root {
+  color-scheme: light dark;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #1f2937;
+  color: #f8fafc;
+}
+
+.container {
+  max-width: 840px;
+  margin: 1.5rem auto;
+  padding: 0 1rem 2rem;
+}
+
+h1 {
+  text-align: center;
+}
+
+.card {
+  background: #111827;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+label {
+  display: block;
+  margin: 0.5rem 0;
+}
+
+input,
+select,
+button {
+  width: 100%;
+  margin-top: 0.3rem;
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #475569;
+}
+
+button {
+  background: #22c55e;
+  color: #052e16;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(1.05);
+}
+
+ul {
+  padding-left: 1rem;
+}
+
+.player-entry {
+  margin-bottom: 0.75rem;
+  line-height: 1.35;
+}
+
+#message {
+  min-height: 1.5rem;
+  color: #fca5a5;
+}
