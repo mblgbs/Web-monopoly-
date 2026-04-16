@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Administration - Monopoly Web</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Administration des parties</h1>
+      <p>
+        Cette page permet de surveiller les salles actives et de consulter les détails d'une partie.
+      </p>
+
+      <section class="card">
+        <div class="toolbar">
+          <h2>Salles actives</h2>
+          <button id="refreshRooms" type="button">Actualiser</button>
+        </div>
+        <ul id="rooms-list"></ul>
+      </section>
+
+      <section class="card" id="roomDetailsSection" hidden>
+        <div class="toolbar">
+          <h2 id="roomTitle">Détails de la salle</h2>
+          <button id="refreshDetails" type="button">Rafraîchir les détails</button>
+        </div>
+
+        <h3>Joueurs</h3>
+        <ul id="admin-players-list"></ul>
+
+        <h3>Journal</h3>
+        <ul id="admin-log-list"></ul>
+      </section>
+
+      <p>
+        <a class="link-button" href="/">← Retour à la page joueur</a>
+      </p>
+      <p id="admin-message"></p>
+    </main>
+
+    <script src="admin.js"></script>
+  </body>
+</html>
