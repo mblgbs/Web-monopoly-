@@ -10,6 +10,7 @@ Mini application web inspirée du Monopoly, jouable à plusieurs via un code de 
 - Transferts d'argent entre joueurs.
 - Journal des actions de la partie.
 - API REST pour piloter une partie (salles, joueurs, transferts).
+- **Page admin** (`/admin.html`) pour visualiser les salles actives et consulter leurs détails.
 
 ## Lancer le projet
 
@@ -20,11 +21,14 @@ npm start
 
 Puis ouvrir `http://localhost:3000` dans plusieurs onglets (ou navigateurs) pour simuler plusieurs joueurs.
 
+La page d'administration est disponible sur `http://localhost:3000/admin.html`.
+
 ## Structure
 
 - `server.js` : serveur Express + Socket.IO.
 - `public/index.html` : interface utilisateur.
 - `public/app.js` : logique client multijoueur.
+- `public/admin.html` + `public/admin.js` : interface d'administration des salles.
 - `public/styles.css` : styles.
 
 ## API

@@ -66,3 +66,32 @@ ul {
   min-height: 1.5rem;
   color: #fca5a5;
 }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.room-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.link-button {
+  display: inline-block;
+  background: #38bdf8;
+  color: #082f49;
+  text-decoration: none;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.link-button:hover {
+  filter: brightness(1.05);
+}
