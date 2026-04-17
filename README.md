@@ -69,6 +69,23 @@ curl -X POST http://localhost:3000/api/rooms/ABCD/transfer \
   -d '{"sourceId":"api-1","targetId":"api-2","amount":100}'
 ```
 
+## Authentification FranceConnect (MVP SSO)
+
+L'API peut valider les tokens auprès de `FranceConnect-Monopoly` pour sécuriser `/api/*`.
+
+Variables d'environnement:
+
+- `SERVICE_AUTH_ENABLED=true`
+- `FRANCECONNECT_BASE_URL=http://127.0.0.1:8000`
+- `AUTH_REQUEST_TIMEOUT_MS=2500`
+
+Comportement:
+
+- `/api/health` reste public
+- les autres routes `/api/*` exigent `Authorization: Bearer <token>`
+- token invalide/manquant -> `401`
+- fournisseur d'auth indisponible -> `503`
+
 ## API Compte de Banque Monopoly (Python)
 
 Cette API permet de gérer des comptes de joueurs pour une banque Monopoly en mémoire.

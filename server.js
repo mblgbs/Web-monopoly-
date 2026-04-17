@@ -7,9 +7,49 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
+const SERVICE_AUTH_ENABLED = String(process.env.SERVICE_AUTH_ENABLED || "false").toLowerCase() === "true";
+const FRANCECONNECT_BASE_URL = String(process.env.FRANCECONNECT_BASE_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+const AUTH_REQUEST_TIMEOUT_MS = Number(process.env.AUTH_REQUEST_TIMEOUT_MS || 2500);
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+
+app.use("/api", async (req, res, next) => {
+  if (!SERVICE_AUTH_ENABLED || req.path === "/health") {
+    next();
+    return;
+  }
+  const authHeader = String(req.headers.authorization || "");
+  if (!authHeader.toLowerCase().startsWith("bearer ")) {
+    res.status(401).json({ error: "Authentication required." });
+    return;
+  }
+  const token = authHeader.slice(7).trim();
+  if (!token) {
+    res.status(401).json({ error: "Authentication required." });
+    return;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AUTH_REQUEST_TIMEOUT_MS);
+  try {
+    const introspectResponse = await fetch(`${FRANCECONNECT_BASE_URL}/auth/introspect`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      signal: controller.signal
+    });
+    const introspectPayload = await introspectResponse.json();
+    if (!introspectPayload.active) {
+      res.status(401).json({ error: "Invalid token." });
+      return;
+    }
+    next();
+  } catch (_err) {
+    res.status(503).json({ error: "Auth provider unavailable." });
+  } finally {
+    clearTimeout(timeout);
+  }
+});
 
 const rooms = new Map();
 
