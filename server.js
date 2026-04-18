@@ -8,9 +8,9 @@ const server = http.createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 const SERVICE_AUTH_ENABLED = String(process.env.SERVICE_AUTH_ENABLED || "false").toLowerCase() === "true";
-const FRANCECONNECT_BASE_URL = String(process.env.FRANCECONNECT_BASE_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+const FRANCECONNECT_BASE_URL = String(process.env.FRANCECONNECT_BASE_URL || "http://127.0.0.1:8001").replace(/\/$/, "");
 const AUTH_REQUEST_TIMEOUT_MS = Number(process.env.AUTH_REQUEST_TIMEOUT_MS || 2500);
-const BANK_API_BASE_URL = String(process.env.BANK_API_BASE_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+const BANK_API_BASE_URL = String(process.env.BANK_API_BASE_URL || "http://127.0.0.1:8002").replace(/\/$/, "");
 const BANK_REQUEST_TIMEOUT_MS = Number(process.env.BANK_REQUEST_TIMEOUT_MS || 2500);
 
 app.use(express.json());

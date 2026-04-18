@@ -76,7 +76,7 @@ L'API peut valider les tokens auprès de `FranceConnect-Monopoly` pour sécurise
 Variables d'environnement:
 
 - `SERVICE_AUTH_ENABLED=true`
-- `FRANCECONNECT_BASE_URL=http://127.0.0.1:8000`
+- `FRANCECONNECT_BASE_URL=http://127.0.0.1:8001`
 - `AUTH_REQUEST_TIMEOUT_MS=2500`
 
 Comportement:
@@ -96,7 +96,7 @@ Cette API permet de gérer des comptes de joueurs pour une banque Monopoly en m�
 python api.py
 ```
 
-Serveur par défaut : `http://0.0.0.0:8000`
+Serveur par défaut : `http://0.0.0.0:8002`
 
 ### Points d'extrémité
 
@@ -123,15 +123,15 @@ Serveur par défaut : `http://0.0.0.0:8000`
 ### Exemples de boucles curl
 
 ```bash
-curl -X POST http://localhost:8000/comptes \
+curl -X POST http://localhost:8002/comptes \
   -H "Content-Type: application/json" \
   -d '{"nom":"Alice","solde_initial":1500}'
 
-curl -X POST http://localhost:8000/comptes/1/depot \
+curl -X POST http://localhost:8002/comptes/1/depot \
   -H "Content-Type: application/json" \
   -d '{"montant":200}'
 
-curl -X POST http://localhost:8000/transferts \
+curl -X POST http://localhost:8002/transferts \
   -H "Content-Type: application/json" \
   -d '{"source_id":1,"destination_id":2,"montant":100}'
 ```
