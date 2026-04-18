@@ -112,7 +112,7 @@ class MonopolyBankApiHandler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     host = "0.0.0.0"
-    port = 8002
+    port = 8000
     server = ThreadingHTTPServer((host, port), MonopolyBankApiHandler)
     print(f"API Compte de Banque Monopoly sur http://{host}:{port}")
     server.serve_forever()

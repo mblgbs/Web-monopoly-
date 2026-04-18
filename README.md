@@ -35,6 +35,17 @@ La page d'administration est disponible sur `http://localhost:3000/admin.html`.
 
 Base URL: `http://localhost:3000`
 
+## Variables d'environnement (ports et dependances)
+
+Configuration locale recommandee:
+
+- `PORT=3000`
+- `FRANCECONNECT_BASE_URL=http://127.0.0.1:8001`
+- `BANK_API_BASE_URL=http://127.0.0.1:8002`
+- `SAVE_SERVICE_BASE_URL=http://127.0.0.1:8010`
+- `SERVICE_AUTH_ENABLED=true` (optionnel)
+- `AUTH_REQUEST_TIMEOUT_MS=2500`
+
 ### Vérifier l'API
 
 ```bash
@@ -86,18 +97,6 @@ Comportement:
 - token invalide/manquant -> `401`
 - fournisseur d'auth indisponible -> `503`
 
-## Sauvegarde centralisee (save-service + PostgreSQL)
-
-Le serveur web sauvegarde maintenant les salles dans `save-service`.
-En cas d'indisponibilite du service, l'application continue en mode memoire (fallback).
-
-Variables d'environnement:
-
-- `SAVE_SERVICE_BASE_URL=http://127.0.0.1:8010`
-- `SAVE_SERVICE_TIMEOUT_MS=2500`
-- `SAVE_SERVICE_RETRIES=1`
-- `SAVE_SERVICE_API_TOKEN=` (optionnel)
-
 ## API Compte de Banque Monopoly (Python)
 
 Cette API permet de gérer des comptes de joueurs pour une banque Monopoly en mémoire.
@@ -108,7 +107,12 @@ Cette API permet de gérer des comptes de joueurs pour une banque Monopoly en m�
 python api.py
 ```
 
-Serveur par défaut : `http://0.0.0.0:8002`
+Serveur par défaut : `http://0.0.0.0:8000`
+ 
+Pour un environnement multi-services sans conflit de ports, utiliser:
+
+- `PORT=8002`
+- `FRANCECONNECT_BASE_URL=http://127.0.0.1:8001`
 
 ### Points d'extrémité
 
