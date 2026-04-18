@@ -2,6 +2,7 @@ const path = require("path");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const { deleteRoom, loadRooms, saveRoom } = require("./save_service_client");
 
 const app = express();
 const server = http.createServer(app);
@@ -55,6 +56,22 @@ app.use("/api", async (req, res, next) => {
 
 const rooms = new Map();
 
+function serializeRoom(room) {
+  return {
+    players: room.players,
+    log: room.log,
+    bankAccountsByPlayerId: Object.fromEntries(room.bankAccountsByPlayerId.entries())
+  };
+}
+
+function hydrateRoom(payload) {
+  return {
+    players: Array.isArray(payload.players) ? payload.players : [],
+    log: Array.isArray(payload.log) ? payload.log : [],
+    bankAccountsByPlayerId: new Map(Object.entries(payload.bankAccountsByPlayerId || {}))
+  };
+}
+
 function generateCardNumber() {
   return `4${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(
     1000 + Math.random() * 9000
@@ -72,6 +89,38 @@ function getRoom(roomCode) {
     });
   }
   return rooms.get(roomCode);
+}
+
+async function persistRoomState(roomCode, room) {
+  try {
+    await saveRoom(roomCode, serializeRoom(room));
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn(`[save-service] failed to persist room ${roomCode}: ${error.message}`);
+  }
+}
+
+async function deleteRoomState(roomCode) {
+  try {
+    await deleteRoom(roomCode);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn(`[save-service] failed to delete room ${roomCode}: ${error.message}`);
+  }
+}
+
+async function loadInitialRooms() {
+  try {
+    const items = await loadRooms();
+    items.forEach((item) => {
+      rooms.set(item.key, hydrateRoom(item.payload || {}));
+    });
+    // eslint-disable-next-line no-console
+    console.log(`[save-service] loaded ${items.length} room(s)`);
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.warn(`[save-service] unavailable at startup, using in-memory fallback: ${error.message}`);
+  }
 }
 
 function createPlayer({ id, name }) {
@@ -254,6 +303,7 @@ app.post("/api/rooms/:roomCode/join", (req, res) => {
       room.bankAccountsByPlayerId.set(playerId, accountId);
       room.log.push(`${playerName} rejoint la partie via API.`);
       io.to(roomCode).emit("room-updated", sanitizeRoom(room));
+      void persistRoomState(roomCode, room);
 
       res.status(201).json({
         roomCode,
@@ -282,6 +332,7 @@ app.post("/api/rooms/:roomCode/transfer", async (req, res) => {
   }
 
   io.to(roomCode).emit("room-updated", sanitizeRoom(room));
+  void persistRoomState(roomCode, room);
   res.json({
     roomCode,
     ...sanitizeRoom(room)
@@ -309,6 +360,7 @@ io.on("connection", (socket) => {
         room.players.push(player);
         room.bankAccountsByPlayerId.set(socket.id, accountId);
         room.log.push(`${cleanName} rejoint la partie.`);
+        void persistRoomState(cleanCode, room);
       } catch (_error) {
         socket.emit("error-message", "Service bancaire indisponible.");
         return;
@@ -319,6 +371,7 @@ io.on("connection", (socket) => {
     socket.data.roomCode = cleanCode;
 
     io.to(cleanCode).emit("room-updated", sanitizeRoom(room));
+    void persistRoomState(cleanCode, room);
   });
 
   socket.on("transfer", async ({ targetId, amount }) => {
@@ -338,6 +391,7 @@ io.on("connection", (socket) => {
     }
 
     io.to(roomCode).emit("room-updated", sanitizeRoom(room));
+    void persistRoomState(roomCode, room);
   });
 
   socket.on("disconnect", () => {
@@ -355,14 +409,21 @@ io.on("connection", (socket) => {
 
     if (room.players.length === 0) {
       rooms.delete(roomCode);
+      void deleteRoomState(roomCode);
       return;
     }
 
     io.to(roomCode).emit("room-updated", sanitizeRoom(room));
+    void persistRoomState(roomCode, room);
   });
 });
 
-server.listen(PORT, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Monopoly Web lancé sur http://localhost:${PORT}`);
-});
+async function startServer() {
+  await loadInitialRooms();
+  server.listen(PORT, () => {
+    // eslint-disable-next-line no-console
+    console.log(`Monopoly Web lancé sur http://localhost:${PORT}`);
+  });
+}
+
+void startServer();

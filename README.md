@@ -86,6 +86,18 @@ Comportement:
 - token invalide/manquant -> `401`
 - fournisseur d'auth indisponible -> `503`
 
+## Sauvegarde centralisee (save-service + PostgreSQL)
+
+Le serveur web sauvegarde maintenant les salles dans `save-service`.
+En cas d'indisponibilite du service, l'application continue en mode memoire (fallback).
+
+Variables d'environnement:
+
+- `SAVE_SERVICE_BASE_URL=http://127.0.0.1:8010`
+- `SAVE_SERVICE_TIMEOUT_MS=2500`
+- `SAVE_SERVICE_RETRIES=1`
+- `SAVE_SERVICE_API_TOKEN=` (optionnel)
+
 ## API Compte de Banque Monopoly (Python)
 
 Cette API permet de gérer des comptes de joueurs pour une banque Monopoly en mémoire.
