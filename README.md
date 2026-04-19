@@ -2,6 +2,8 @@
 
 Mini application web inspirée du Monopoly, jouable à plusieurs via un code de salle.
 
+**Écosystème :** les URLs des services du dépôt sont documentées via `GET http://127.0.0.1:8004/ecosystem` sur l’API [services-Monopoly-](../services-Monopoly-/README.md#decouverte-des-services-ecosystem) (cette app : port `3000` par défaut).
+
 ## Fonctionnalités
 
 - Création/rejoint d'une salle multijoueur en temps réel.
@@ -34,17 +36,6 @@ La page d'administration est disponible sur `http://localhost:3000/admin.html`.
 ## API
 
 Base URL: `http://localhost:3000`
-
-## Variables d'environnement (ports et dependances)
-
-Configuration locale recommandee:
-
-- `PORT=3000`
-- `FRANCECONNECT_BASE_URL=http://127.0.0.1:8001`
-- `BANK_API_BASE_URL=http://127.0.0.1:8002`
-- `SAVE_SERVICE_BASE_URL=http://127.0.0.1:8010`
-- `SERVICE_AUTH_ENABLED=true` (optionnel)
-- `AUTH_REQUEST_TIMEOUT_MS=2500`
 
 ### Vérifier l'API
 
@@ -80,23 +71,6 @@ curl -X POST http://localhost:3000/api/rooms/ABCD/transfer \
   -d '{"sourceId":"api-1","targetId":"api-2","amount":100}'
 ```
 
-## Authentification FranceConnect (MVP SSO)
-
-L'API peut valider les tokens auprès de `FranceConnect-Monopoly` pour sécuriser `/api/*`.
-
-Variables d'environnement:
-
-- `SERVICE_AUTH_ENABLED=true`
-- `FRANCECONNECT_BASE_URL=http://127.0.0.1:8001`
-- `AUTH_REQUEST_TIMEOUT_MS=2500`
-
-Comportement:
-
-- `/api/health` reste public
-- les autres routes `/api/*` exigent `Authorization: Bearer <token>`
-- token invalide/manquant -> `401`
-- fournisseur d'auth indisponible -> `503`
-
 ## API Compte de Banque Monopoly (Python)
 
 Cette API permet de gérer des comptes de joueurs pour une banque Monopoly en mémoire.
@@ -108,11 +82,6 @@ python api.py
 ```
 
 Serveur par défaut : `http://0.0.0.0:8000`
- 
-Pour un environnement multi-services sans conflit de ports, utiliser:
-
-- `PORT=8002`
-- `FRANCECONNECT_BASE_URL=http://127.0.0.1:8001`
 
 ### Points d'extrémité
 
@@ -139,15 +108,15 @@ Pour un environnement multi-services sans conflit de ports, utiliser:
 ### Exemples de boucles curl
 
 ```bash
-curl -X POST http://localhost:8002/comptes \
+curl -X POST http://localhost:8000/comptes \
   -H "Content-Type: application/json" \
   -d '{"nom":"Alice","solde_initial":1500}'
 
-curl -X POST http://localhost:8002/comptes/1/depot \
+curl -X POST http://localhost:8000/comptes/1/depot \
   -H "Content-Type: application/json" \
   -d '{"montant":200}'
 
-curl -X POST http://localhost:8002/transferts \
+curl -X POST http://localhost:8000/transferts \
   -H "Content-Type: application/json" \
   -d '{"source_id":1,"destination_id":2,"montant":100}'
 ```
