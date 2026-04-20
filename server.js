@@ -12,6 +12,8 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 const rooms = new Map();
+const comptes = new Map();
+let prochainCompteId = 1;
 
 function generateCardNumber() {
   return `4${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(
@@ -59,6 +61,20 @@ function sanitizeRooms() {
   }));
 }
 
+function sanitizeCompte(compte) {
+  return {
+    id: compte.id,
+    nom: compte.nom,
+    solde: compte.solde
+  };
+}
+
+function lireMontant(montant) {
+  const valeur = Number(montant);
+  if (!Number.isFinite(valeur) || valeur <= 0) return null;
+  return valeur;
+}
+
 function transferInRoom(room, { sourceId, targetId, amount }) {
   const sender = room.players.find((player) => player.id === sourceId);
   const target = room.players.find((player) => player.id === targetId);
@@ -84,6 +100,118 @@ app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
     service: "web-monopoly-api"
+  });
+});
+
+app.get("/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    service: "monopoly-banque-api"
+  });
+});
+
+app.post("/comptes", (req, res) => {
+  const nom = String(req.body?.nom || "").trim();
+  const soldeInitial = Number(req.body?.solde_initial);
+
+  if (!nom || !Number.isFinite(soldeInitial) || soldeInitial < 0) {
+    res.status(400).json({ error: "Données de compte invalides." });
+    return;
+  }
+
+  const compte = {
+    id: prochainCompteId++,
+    nom,
+    solde: soldeInitial
+  };
+  comptes.set(compte.id, compte);
+
+  res.status(201).json(sanitizeCompte(compte));
+});
+
+app.get("/comptes", (_req, res) => {
+  res.json({
+    comptes: Array.from(comptes.values()).map((compte) => sanitizeCompte(compte))
+  });
+});
+
+app.get("/comptes/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const compte = comptes.get(id);
+  if (!compte) {
+    res.status(404).json({ error: "Compte introuvable." });
+    return;
+  }
+  res.json(sanitizeCompte(compte));
+});
+
+app.post("/comptes/:id/depot", (req, res) => {
+  const id = Number(req.params.id);
+  const compte = comptes.get(id);
+  const montant = lireMontant(req.body?.montant);
+
+  if (!compte) {
+    res.status(404).json({ error: "Compte introuvable." });
+    return;
+  }
+  if (!montant) {
+    res.status(400).json({ error: "Montant invalide." });
+    return;
+  }
+
+  compte.solde += montant;
+  res.json(sanitizeCompte(compte));
+});
+
+app.post("/comptes/:id/retrait", (req, res) => {
+  const id = Number(req.params.id);
+  const compte = comptes.get(id);
+  const montant = lireMontant(req.body?.montant);
+
+  if (!compte) {
+    res.status(404).json({ error: "Compte introuvable." });
+    return;
+  }
+  if (!montant) {
+    res.status(400).json({ error: "Montant invalide." });
+    return;
+  }
+  if (compte.solde < montant) {
+    res.status(400).json({ error: "Solde insuffisant." });
+    return;
+  }
+
+  compte.solde -= montant;
+  res.json(sanitizeCompte(compte));
+});
+
+app.post("/transferts", (req, res) => {
+  const sourceId = Number(req.body?.source_id);
+  const destinationId = Number(req.body?.destination_id);
+  const montant = lireMontant(req.body?.montant);
+
+  const source = comptes.get(sourceId);
+  const destination = comptes.get(destinationId);
+
+  if (!source || !destination) {
+    res.status(404).json({ error: "Compte source ou destination introuvable." });
+    return;
+  }
+  if (!montant) {
+    res.status(400).json({ error: "Montant invalide." });
+    return;
+  }
+  if (source.solde < montant) {
+    res.status(400).json({ error: "Solde insuffisant." });
+    return;
+  }
+
+  source.solde -= montant;
+  destination.solde += montant;
+
+  res.json({
+    source: sanitizeCompte(source),
+    destination: sanitizeCompte(destination)
   });
 });
 
