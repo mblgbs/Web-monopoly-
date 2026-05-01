@@ -42,7 +42,9 @@
             <input id="transferAmount" type="number" min="1" value="100" required />
           </label>
           <button type="submit">Envoyer</button>
+          <button type="button" id="generate-payment-link">Generer lien Stripe</button>
         </form>
+        <p id="payment-link-result"></p>
       </section>
 
       <section class="card" id="log-section" hidden>
@@ -52,6 +54,11 @@
 
       <p>
         <a class="link-button" href="/admin.html">Ouvrir la page admin</a>
+      </p>
+      <p>
+        <a class="link-button" id="wallet-link" href="http://127.0.0.1:3002" target="_blank" rel="noreferrer">
+          Ouvrir Pay Wallet
+        </a>
       </p>
 
       <p id="message"></p>

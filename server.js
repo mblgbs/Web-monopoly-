@@ -7,6 +7,8 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const PORT = process.env.PORT || 3000;
+const SERVICES_MONOPOLY_BASE_URL = (process.env.SERVICES_MONOPOLY_BASE_URL || "http://127.0.0.1:8004").replace(/\/+$/, "");
+const PAY_WALLET_WEB_URL = (process.env.PAY_WALLET_WEB_URL || "http://127.0.0.1:3002").replace(/\/+$/, "");
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -106,6 +108,10 @@ app.get("/api/rooms/:roomCode", (req, res) => {
   });
 });
 
+app.get("/api/wallet/url", (_req, res) => {
+  res.json({ url: PAY_WALLET_WEB_URL });
+});
+
 app.post("/api/rooms/:roomCode/join", (req, res) => {
   const roomCode = String(req.params.roomCode || "").trim().toUpperCase();
   const playerName = String(req.body?.playerName || "").trim() || "Joueur API";
@@ -150,6 +156,67 @@ app.post("/api/rooms/:roomCode/transfer", (req, res) => {
     roomCode,
     ...sanitizeRoom(room)
   });
+});
+
+app.post("/api/payments/link", async (req, res) => {
+  const roomCode = String(req.body?.roomCode || "").trim().toUpperCase();
+  const sourceId = String(req.body?.sourceId || "").trim();
+  const targetId = String(req.body?.targetId || "").trim();
+  const amount = Number(req.body?.amount);
+
+  if (!roomCode || !rooms.has(roomCode)) {
+    res.status(404).json({ error: "Salle introuvable." });
+    return;
+  }
+
+  if (!sourceId || !targetId || !Number.isFinite(amount) || amount <= 0) {
+    res.status(400).json({ error: "Parametres de paiement invalides." });
+    return;
+  }
+
+  const room = rooms.get(roomCode);
+  const referenceId = `${roomCode}-${Date.now()}`;
+  const amountHintCents = Math.round(amount * 100);
+
+  try {
+    const upstream = await fetch(`${SERVICES_MONOPOLY_BASE_URL}/payments/link`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        app: "web",
+        context: "transfer",
+        reference_id: referenceId,
+        metadata: {
+          roomCode,
+          sourceId,
+          targetId,
+          amount,
+          amount_cents: amountHintCents
+        },
+        amount_hint_cents: amountHintCents
+      })
+    });
+
+    const payload = await upstream.json();
+    if (!upstream.ok) {
+      const detail = typeof payload?.detail === "string" ? payload.detail : "Erreur service paiements";
+      res.status(502).json({ error: detail });
+      return;
+    }
+
+    const url = typeof payload?.url === "string" ? payload.url : null;
+    if (!url) {
+      res.status(502).json({ error: "Reponse paiement invalide." });
+      return;
+    }
+
+    room.log.push(`Lien Stripe genere (${amount} M$) pour ${sourceId} -> ${targetId}.`);
+    io.to(roomCode).emit("room-updated", sanitizeRoom(room));
+
+    res.json({ url });
+  } catch (_error) {
+    res.status(502).json({ error: "Impossible de contacter le service paiements." });
+  }
 });
 
 io.on("connection", (socket) => {

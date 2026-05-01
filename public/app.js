@@ -7,6 +7,9 @@ const roomCodeInput = document.getElementById("roomCode");
 const playersList = document.getElementById("players-list");
 const targetPlayerSelect = document.getElementById("targetPlayer");
 const transferAmountInput = document.getElementById("transferAmount");
+const paymentLinkButton = document.getElementById("generate-payment-link");
+const paymentLinkResult = document.getElementById("payment-link-result");
+const walletLink = document.getElementById("wallet-link");
 const logList = document.getElementById("log-list");
 const bankSection = document.getElementById("bank-section");
 const transferSection = document.getElementById("transfer-section");
@@ -15,6 +18,22 @@ const message = document.getElementById("message");
 
 let myId = null;
 let playersCache = [];
+
+async function hydrateWalletLink() {
+  if (!walletLink) return;
+  try {
+    const response = await fetch("/api/wallet/url");
+    if (!response.ok) return;
+    const payload = await response.json();
+    if (payload && typeof payload.url === "string" && payload.url.trim()) {
+      walletLink.href = payload.url;
+    }
+  } catch (_error) {
+    // Keep default link when API is unavailable.
+  }
+}
+
+hydrateWalletLink();
 
 joinForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -81,4 +100,49 @@ socket.on("room-updated", (room) => {
 
 socket.on("error-message", (text) => {
   message.textContent = text;
+});
+
+paymentLinkButton.addEventListener("click", async () => {
+  const roomCode = roomCodeInput.value.trim().toUpperCase();
+  const targetId = targetPlayerSelect.value;
+  const amount = Number(transferAmountInput.value);
+
+  if (!roomCode || !myId || !targetId || !Number.isFinite(amount) || amount <= 0) {
+    message.textContent = "Paiement: donnees invalides.";
+    return;
+  }
+
+  paymentLinkResult.textContent = "Generation du lien Stripe en cours...";
+
+  try {
+    const response = await fetch("/api/payments/link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomCode,
+        sourceId: myId,
+        targetId,
+        amount
+      })
+    });
+
+    const payload = await response.json();
+    if (!response.ok) {
+      paymentLinkResult.textContent = payload.error || "Echec de generation du lien.";
+      return;
+    }
+
+    const link = payload.url;
+    paymentLinkResult.innerHTML = "";
+    const anchor = document.createElement("a");
+    anchor.href = link;
+    anchor.target = "_blank";
+    anchor.rel = "noreferrer";
+    anchor.textContent = "Payer maintenant via Stripe";
+    anchor.className = "link-button";
+    paymentLinkResult.appendChild(anchor);
+    message.textContent = "Lien de paiement Stripe genere.";
+  } catch (_error) {
+    paymentLinkResult.textContent = "Service de paiement indisponible.";
+  }
 });

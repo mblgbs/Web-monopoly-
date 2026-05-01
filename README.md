@@ -126,3 +126,16 @@ curl -X POST http://localhost:8000/transferts \
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+## Paiements Stripe (gateway central)
+
+- Nouveau endpoint backend: `POST /api/payments/link`.
+- Cette route appelle `services-Monopoly-` sur `POST /payments/link`.
+- Variable d'environnement: `SERVICES_MONOPOLY_BASE_URL` (defaut `http://127.0.0.1:8004`).
+- Dans l'UI, le bouton `Generer lien Stripe` apparait dans le bloc de transfert.
+
+## Entree Pay Wallet
+
+- Un bouton visible `Ouvrir Pay Wallet` est affiche sur la page d'accueil.
+- Endpoint backend associe: `GET /api/wallet/url`.
+- Variable d'environnement: `PAY_WALLET_WEB_URL` (defaut `http://127.0.0.1:3002`).
